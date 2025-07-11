@@ -27,9 +27,7 @@
   base-bigarray
   base-unix  
   conf-libcurl)
- (conflicts
-  (ocurl (<> "transition")))
- (tags (org:ygrek clib:curl)))
+  (tags (org:ygrek clib:curl)))
 
 (package
  (name curl_lwt)
@@ -44,9 +42,4 @@
   (lwt_ppx :with-dev-setup))
  (tags (org:ygrek clib:curl)))
 
-(package
- (name ocurl)
- (synopsis "This is a transition package, ocurl is now named curl. Use the curl package instead")
- (description "This is a transition package, ocurl is now named curl. Use the curl package instead.")
- (allow_empty)
- (version transition))
+

@@ -19,9 +19,6 @@ depends: [
   "conf-libcurl"
   "odoc" {with-doc}
 ]
-conflicts: [
-  "ocurl" {!= "transition"}
-]
 build: [
   ["dune" "subst"] {dev}
   [
