@@ -577,7 +577,7 @@ static char* strdup_ml(value v)
 {
   char* p = NULL;
   p = (char*)malloc(caml_string_length(v)+1);
-  memcpy(p,String_val(v),caml_string_length(v)+1); // caml strings have terminating zero
+  memcpy(p,String_val(v),caml_string_length(v)+1); /* caml strings have terminating zero */
   return p;
 }
 
@@ -5406,19 +5406,6 @@ value caml_curl_check_enums(value v_unit)
 * Curl share support
 */
 
-static const char* curl_share_strerror_custom(CURLSHcode code)
-{
-    switch (code) {
-        case CURLSHE_OK: return "No error";
-        case CURLSHE_BAD_OPTION: return "Invalid option";
-        case CURLSHE_IN_USE: return "Share handle is still in use by easy handles";
-        case CURLSHE_INVALID: return "Invalid share handle";
-        case CURLSHE_NOMEM: return "Out of memory";
-        case CURLSHE_NOT_BUILT_IN: return "Feature not built into libcurl";
-        default: return "Unknown share error";
-    }
-}
-
 static void raise_share_error(char const* func, CURLSHcode code)
 {
     CAMLparam0();
@@ -5431,11 +5418,11 @@ static void raise_share_error(char const* func, CURLSHcode code)
         if (NULL == exception) caml_invalid_argument("Curl.Share.Error exception thrown but not registered");
     }
 
-    // Create structured exception data: (function_name, error_code, error_message)
+    /* Create structured exception data: (function_name, error_code, error_message) */
     exceptionData = caml_alloc_tuple(3);
     Store_field(exceptionData, 0, caml_copy_string(func));
     Store_field(exceptionData, 1, Val_int(code));
-    Store_field(exceptionData, 2, caml_copy_string(curl_share_strerror_custom(code)));
+    Store_field(exceptionData, 2, caml_copy_string(curl_share_strerror(code)));
 
     caml_raise_with_arg(*exception, exceptionData);
     CAMLreturn0;
@@ -5445,18 +5432,18 @@ value caml_curl_share_strerror(value code)
 {
     CAMLparam1(code);
     CURLSHcode c = (CURLSHcode)Int_val(code);
-    CAMLreturn(caml_copy_string(curl_share_strerror_custom(c)));
+    CAMLreturn(caml_copy_string(curl_share_strerror(c)));
 }
 
 static void op_curl_share_finalize(value v)
 {
     ml_share_handle* h = Share_val(v);
     if (h && h->handle) {
-        // Don't throw exceptions during finalization
+        /* Don't throw exceptions during finalization */
         CURLSHcode rc = curl_share_cleanup(h->handle);
         if (rc != CURLSHE_OK) {
             fprintf(stderr, "Warning: curl_share_cleanup failed during finalization with code %d: %s\n", 
-                    rc, curl_share_strerror_custom(rc));
+                    rc, curl_share_strerror(rc));
         }
         h->handle = NULL;
     }

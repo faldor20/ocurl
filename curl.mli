@@ -669,6 +669,8 @@ val cleanup : t -> unit
 
 (** {2 curl_share API} *)
 
+exception ShareError of (string * int * string)  (** function_name * error_code * error_message *)
+
 val share_init : unit -> share_t
 (** Create a new share handle *)
 

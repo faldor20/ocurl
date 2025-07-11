@@ -622,7 +622,7 @@ exception ShareError of (string * int * string)  (* function_name * error_code *
 
 let () = 
     Callback.register_exception "Curl.Share.Error" 
-      (Error ("", 0, ""))
+      (ShareError ("", 0, ""))
 
 external share_init : unit -> share_t = "caml_curl_share_init"
 external share_cleanup : share_t -> unit = "caml_curl_share_cleanup"
