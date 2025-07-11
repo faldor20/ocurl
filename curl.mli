@@ -11,6 +11,8 @@
 
 type t
 
+type share_t
+
 type curlCode =
   | CURLE_OK
   | CURLE_UNSUPPORTED_PROTOCOL
@@ -513,6 +515,7 @@ type curlOption =
   | CURLOPT_TCP_KEEPIDLE of int
   | CURLOPT_TCP_KEEPINTVL of int
   | CURLOPT_NOPROXY of string
+  | CURLOPT_SHARE of share_t
 
 type initOption =
   | CURLINIT_GLOBALALL
@@ -613,6 +616,19 @@ type headerOrigin =
   | CURLH_1XX
   | CURLH_PSEUDO
 
+(** Share interface types *)
+
+
+type curlShareData =
+  | CURLSHOPT_SHARE_COOKIE
+  | CURLSHOPT_SHARE_DNS
+  | CURLSHOPT_SHARE_SSL_SESSION
+  | CURLSHOPT_SHARE_CONNECT
+
+type curlShareOption = 
+  | CURLSHOPT_SHARE of curlShareData
+  | CURLSHOPT_UNSHARE of curlShareData
+
 (** Get a list of headers that result from repeatedly calling [curl_easy_nextheader] with
     the supplied origins and request. Typical usage is:
     [get_headers [ CURLH_HEADER ] ~request:(-1)]
@@ -650,6 +666,20 @@ val setopt : t -> curlOption -> unit
 
 val perform : t -> unit
 val cleanup : t -> unit
+
+(** {2 curl_share API} *)
+
+val share_init : unit -> share_t
+(** Create a new share handle *)
+
+val share_cleanup : share_t -> unit
+(** Clean up a share handle *)
+
+val share_setopt : share_t -> curlShareOption -> unit
+(** Set share options *)
+
+val share_strerror : int -> string
+(** Get share error string *)
 val getinfo : t -> curlInfo -> curlInfoResult
 val escape : string -> string
 val unescape : string -> string
