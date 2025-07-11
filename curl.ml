@@ -617,6 +617,13 @@ external unescape : string -> string = "caml_curl_unescape"
 external getdate : string -> float -> float = "caml_curl_getdate"
 external version : unit -> string = "caml_curl_version"
 
+
+exception ShareError of (string * int * string)  (* function_name * error_code * error_message *)
+
+let () = 
+    Callback.register_exception "Curl.Share.Error" 
+      (Error ("", 0, ""))
+
 external share_init : unit -> share_t = "caml_curl_share_init"
 external share_cleanup : share_t -> unit = "caml_curl_share_cleanup"
 external share_setopt : share_t -> curlShareOption -> unit = "caml_curl_share_setopt"

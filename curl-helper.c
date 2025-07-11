@@ -5406,7 +5406,6 @@ value caml_curl_check_enums(value v_unit)
 * Curl share support
 */
 
-// Add proper CURLSHcode to message mapping
 static const char* curl_share_strerror_custom(CURLSHcode code)
 {
     switch (code) {
@@ -5429,11 +5428,7 @@ static void raise_share_error(char const* func, CURLSHcode code)
     if (NULL == exception)
     {
         exception = caml_named_value("Curl.Share.Error");
-        if (NULL == exception) {
-            // Fallback to a more generic but appropriate exception
-            exception = caml_named_value("Curl.CurlException");
-            if (NULL == exception) caml_invalid_argument("Curl.Share.Error not registered");
-        }
+        if (NULL == exception) caml_invalid_argument("Curl.Share.Error exception thrown but not registered");
     }
 
     // Create structured exception data: (function_name, error_code, error_message)
@@ -5453,7 +5448,6 @@ value caml_curl_share_strerror(value code)
     CAMLreturn(caml_copy_string(curl_share_strerror_custom(c)));
 }
 
-// Also improve the finalize function to handle cleanup more gracefully
 static void op_curl_share_finalize(value v)
 {
     ml_share_handle* h = Share_val(v);
@@ -5461,7 +5455,6 @@ static void op_curl_share_finalize(value v)
         // Don't throw exceptions during finalization
         CURLSHcode rc = curl_share_cleanup(h->handle);
         if (rc != CURLSHE_OK) {
-            // Log error but don't throw exception during GC
             fprintf(stderr, "Warning: curl_share_cleanup failed during finalization with code %d: %s\n", 
                     rc, curl_share_strerror_custom(rc));
         }
@@ -5611,9 +5604,6 @@ value caml_curl_share_setopt(value v_share, value option)
 
     CAMLreturn(Val_unit);
 }
-
-
-
 
 #ifdef __cplusplus
 }
