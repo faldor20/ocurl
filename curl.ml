@@ -7,7 +7,40 @@
 
 type t
 
-type share_t
+module Share = struct
+
+  type st
+
+  type curlShareCode=
+    | CURLSHE_OK
+    | CURLSHE_BAD_OPTION
+    | CURLSHE_IN_USE
+    | CURLSHE_INVALID
+    | CURLSHE_NOMEM
+    | CURLSHE_NOT_BUILT_IN
+
+  type curlShareData =
+    | CURLSHOPT_SHARE_COOKIE
+    | CURLSHOPT_SHARE_DNS
+    | CURLSHOPT_SHARE_SSL_SESSION
+    | CURLSHOPT_SHARE_CONNECT
+
+  type curlShareOption = 
+    | CURLSHOPT_SHARE of curlShareData
+    | CURLSHOPT_UNSHARE of curlShareData
+
+  exception ShareError of (curlShareCode*int*string)  (**  error code variant * error code int * error_message *)
+
+  let () = 
+      Callback.register_exception "Curl.Share.Error" 
+        (ShareError (CURLSHE_OK, 0, ""))
+
+  external init : unit -> st= "caml_curl_share_init"
+  external cleanup : st -> unit = "caml_curl_share_cleanup"
+  external setopt : st -> curlShareOption -> unit = "caml_curl_share_setopt"
+  external strerror : int -> string = "caml_curl_share_strerror"
+
+end
 
 type curlCode =
   | CURLE_OK
@@ -342,16 +375,6 @@ type bigstring = (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.
 
 let proceed = Proceed ()
 
-type curlShareData =
-  | CURLSHOPT_SHARE_COOKIE
-  | CURLSHOPT_SHARE_DNS
-  | CURLSHOPT_SHARE_SSL_SESSION
-  | CURLSHOPT_SHARE_CONNECT
-
-type curlShareOption = 
-  | CURLSHOPT_SHARE of curlShareData
-  | CURLSHOPT_UNSHARE of curlShareData
-
 type curlOption =
   | CURLOPT_WRITEFUNCTION of (string -> int)
   | CURLOPT_READFUNCTION of (int -> string)
@@ -513,7 +536,7 @@ type curlOption =
   | CURLOPT_TCP_KEEPIDLE of int
   | CURLOPT_TCP_KEEPINTVL of int
   | CURLOPT_NOPROXY of string
-  | CURLOPT_SHARE of share_t
+  | CURLOPT_SHARE of Share.st
 
 type initOption =
   | CURLINIT_GLOBALALL
@@ -616,18 +639,6 @@ external escape : string -> string = "caml_curl_escape"
 external unescape : string -> string = "caml_curl_unescape"
 external getdate : string -> float -> float = "caml_curl_getdate"
 external version : unit -> string = "caml_curl_version"
-
-
-exception ShareError of (string * int * string)  (* function_name * error_code * error_message *)
-
-let () = 
-    Callback.register_exception "Curl.Share.Error" 
-      (ShareError ("", 0, ""))
-
-external share_init : unit -> share_t = "caml_curl_share_init"
-external share_cleanup : share_t -> unit = "caml_curl_share_cleanup"
-external share_setopt : share_t -> curlShareOption -> unit = "caml_curl_share_setopt"
-external share_strerror : int -> string = "caml_curl_share_strerror"
 
 type version_info = {
   version : string;
