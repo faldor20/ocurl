@@ -5406,7 +5406,7 @@ value caml_curl_check_enums(value v_unit)
 * Curl share support
 */
 
-static void raise_share_error(char const* func, CURLSHcode code)
+static void raise_share_error( CURLSHcode code)
 {
     CAMLparam0();
     CAMLlocal1(exceptionData);
@@ -5420,7 +5420,7 @@ static void raise_share_error(char const* func, CURLSHcode code)
 
     /* Create structured exception data: (function_name, error_code, error_message) */
     exceptionData = caml_alloc_tuple(3);
-    Store_field(exceptionData, 0, caml_copy_string(func));
+    Store_field(exceptionData, 0, Val_int(code));
     Store_field(exceptionData, 1, Val_int(code));
     Store_field(exceptionData, 2, caml_copy_string(curl_share_strerror(code)));
 
@@ -5450,10 +5450,10 @@ static void op_curl_share_finalize(value v)
     caml_stat_free(h);
 }
 
-static void check_share_code(char const* func, CURLSHcode code)
+static void check_share_code( CURLSHcode code)
 {
     if (code != CURLSHE_OK) {
-        raise_share_error(func, code);
+        raise_share_error( code);
     }
 }
 
@@ -5494,7 +5494,7 @@ value caml_curl_share_init(value unit)
     if (!h)
     {
         caml_stat_free(share);
-        raise_share_error("curl_share_init", CURLSHE_NOMEM);
+        raise_share_error( CURLSHE_NOMEM);
     }
 
     share->handle = h;
@@ -5520,7 +5520,7 @@ value caml_curl_share_cleanup(value handle)
         h->handle = NULL;
     }
 
-    check_share_code("curl_share_cleanup", rc);
+    check_share_code( rc);
 
     CAMLreturn(Val_unit);
 }
@@ -5533,7 +5533,7 @@ value caml_curl_share_setopt(value v_share, value option)
     CURLSHcode result = CURLSHE_OK;
 
     if (NULL == handle) {
-        raise_share_error("curl_share_setopt", CURLSHE_INVALID);
+        raise_share_error( CURLSHE_INVALID);
     }
 
     data = Field(option, 0);
@@ -5587,7 +5587,7 @@ value caml_curl_share_setopt(value v_share, value option)
             break;
     }
 
-    check_share_code("curl_share_setopt", result);
+    check_share_code( result);
 
     CAMLreturn(Val_unit);
 }
