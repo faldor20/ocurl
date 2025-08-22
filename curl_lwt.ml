@@ -15,7 +15,7 @@ let create () =
   let wakeners = Hashtbl.create 32 in
   let finished _ =
     let rec loop n =
-      match M.remove_finished mt with
+      match M.remove_finished mt true with
       | None -> ()
       | Some (h,code) ->
         begin try

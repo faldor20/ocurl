@@ -11,7 +11,7 @@ let pr fmt = Printf.ksprintf print_endline fmt
 
 let finished mt =
   let rec loop n =
-  match M.remove_finished mt with
+  match M.remove_finished mt true with
   | None -> (*if n > 0 then pr "Removed %u handles" n*) ()
   | Some _ -> loop (n+1)
   in loop 0
