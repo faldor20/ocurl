@@ -23,7 +23,7 @@
  (depends
   dune
   (ocaml (>= "4.11"))
-  (dune-configurator (>= "3.18.1"))
+  (dune-configurator (>= "3.18.1" ) (< "3.20.0"))
   base-bigarray
   base-unix  
   conf-libcurl)
