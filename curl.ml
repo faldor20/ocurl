@@ -1611,7 +1611,7 @@ module Multi = struct
   external poll : int -> waitfd list -> mt -> bool = "caml_curl_multi_poll"
   let poll ?(timeout_ms=1000) ?(extra_fds = []) mt = poll timeout_ms extra_fds mt
   external remove : mt -> t -> unit = "caml_curl_multi_remove_handle"
-  external remove_finished : mt -> (t * curlCode) option = "caml_curlm_remove_finished"
+  external remove_finished : mt -> bool-> (t * curlCode) option = "caml_curlm_remove_finished"
   external cleanup : mt -> unit = "caml_curl_multi_cleanup"
 
   (* see curlm_sock_cb *)

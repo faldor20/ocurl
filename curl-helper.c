@@ -4802,7 +4802,7 @@ value caml_curl_multi_cleanup(value handle)
   CAMLreturn(Val_unit);
 }
 
-static CURL* curlm_remove_finished(CURLM* multi_handle, CURLcode* result)
+static CURL* curlm_remove_finished(CURLM* multi_handle, CURLcode* result,bool remove )
 {
   int msgs_in_queue = 0;
 
@@ -4814,16 +4814,18 @@ static CURL* curlm_remove_finished(CURLM* multi_handle, CURLcode* result)
     {
       CURL* easy_handle = msg->easy_handle;
       if (result) *result = msg->data.result;
-      if (CURLM_OK != curl_multi_remove_handle(multi_handle, easy_handle))
-      {
-        /*caml_failwith("curlm_remove_finished");*/
+      if(remove){
+          if (CURLM_OK != curl_multi_remove_handle(multi_handle, easy_handle))
+          {
+            /*caml_failwith("curlm_remove_finished");*/
+          }
       }
       return easy_handle;
     }
   }
 }
 
-value caml_curlm_remove_finished(value v_multi)
+value caml_curlm_remove_finished(value v_multi, bool remove )
 {
   CAMLparam1(v_multi);
   CAMLlocal2(v_easy, v_tuple);
@@ -4835,7 +4837,7 @@ value caml_curlm_remove_finished(value v_multi)
   multi_handle = CURLM_val(v_multi);
 
   caml_release_runtime_system();
-  handle = curlm_remove_finished(multi_handle,&result);
+  handle = curlm_remove_finished(multi_handle,&result,remove);
   caml_acquire_runtime_system();
 
   if (NULL == handle)
@@ -4849,7 +4851,9 @@ value caml_curlm_remove_finished(value v_multi)
     {
         Store_field(Field(conn->ocamlValues, Ocaml_ERRORBUFFER), 0, caml_copy_string(conn->curl_ERRORBUFFER));
     }
-    conn->refcount--;
+    if(remove){
+        conn->refcount--;
+    }
     /* NB: same handle, but different block */
     v_easy = caml_curl_alloc(conn);
     v_tuple = caml_alloc_tuple(2);

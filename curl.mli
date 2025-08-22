@@ -1231,7 +1231,7 @@ module Multi : sig
   val poll : ?timeout_ms:int -> ?extra_fds:waitfd list -> mt -> bool
 
   (** remove finished handle from the multi stack if any. The returned handle may be reused *)
-  val remove_finished : mt -> (t * curlCode) option
+  val remove_finished : mt -> bool-> (t * curlCode) option
 
   (** destroy multi handle (all transfers are stopped, but individual {!type: Curl.t} handles can be reused) *)
   val cleanup : mt -> unit
