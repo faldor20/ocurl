@@ -99,15 +99,15 @@ let demo_share () =
   pr "=== OCurl Share Interface Demo ===\n";
   
   (* Create a share handle *)
-  let share_handle = Curl.share_init () in
+  let share_handle = Curl.Share.init () in
   
   try
     (* Configure what to share *)
     pr "Configuring share handle...";
-    Curl.share_setopt share_handle (Curl.CURLSHOPT_SHARE Curl.CURLSHOPT_SHARE_DNS);
-    Curl.share_setopt share_handle (Curl.CURLSHOPT_SHARE Curl.CURLSHOPT_SHARE_SSL_SESSION);
-    Curl.share_setopt share_handle (Curl.CURLSHOPT_SHARE Curl.CURLSHOPT_SHARE_CONNECT);
-    Curl.share_setopt share_handle (Curl.CURLSHOPT_SHARE Curl.CURLSHOPT_SHARE_COOKIE);
+    Curl.Share.setopt share_handle (Curl.Share.CURLSHOPT_SHARE Curl.Share.CURLSHOPT_SHARE_DNS);
+    Curl.Share.setopt share_handle (Curl.Share.CURLSHOPT_SHARE Curl.Share.CURLSHOPT_SHARE_SSL_SESSION);
+    Curl.Share.setopt share_handle (Curl.Share.CURLSHOPT_SHARE Curl.Share.CURLSHOPT_SHARE_CONNECT);
+    Curl.Share.setopt share_handle (Curl.Share.CURLSHOPT_SHARE Curl.Share.CURLSHOPT_SHARE_COOKIE);
     pr "Share handle configured to share: DNS cache, SSL sessions, connections, and cookies\n";
     
     (* Test URLs - using the same domain to demonstrate sharing benefits *)
@@ -145,15 +145,15 @@ let demo_share () =
     List.iter (fun (_, handle, _, _) -> Curl.cleanup handle) handles_and_data;
     
     (* Clean up share handle *)
-    Curl.share_cleanup share_handle;
+    Curl.Share.cleanup share_handle;
     pr "Share handle cleaned up successfully"
     
   with
   | Curl.CurlException (code, errno, msg) ->
-      Curl.share_cleanup share_handle;
+      Curl.Share.cleanup share_handle;
       pr "Curl error: %s (code=%d, errno=%d)" msg (Curl.int_of_curlCode code) errno
   | e ->
-      Curl.share_cleanup share_handle;
+      Curl.Share.cleanup share_handle;
       pr "Error: %s" (Printexc.to_string e)
 
 (* Cookie sharing validation demo *)
@@ -195,13 +195,13 @@ let demo_manual_cookie_share () =
       pr "Error in non-sharing demo: %s" (Printexc.to_string e);
   in
   pr "\n=== Part 2: WITH Cookie Sharing ===";
-  let share_handle = Curl.share_init () in
+  let share_handle = Curl.Share.init () in
   let h1_share = ref None in
   let h2_share = ref None in
   let ()=
   try
     (* Configure share handle *)
-    Curl.share_setopt share_handle (Curl.CURLSHOPT_SHARE Curl.CURLSHOPT_SHARE_COOKIE);
+    Curl.Share.setopt share_handle (Curl.Share.CURLSHOPT_SHARE Curl.Share.CURLSHOPT_SHARE_COOKIE);
     pr "Share handle configured to share cookies only\n";
     
     (* Create handles with sharing *)
@@ -258,7 +258,7 @@ let demo_manual_cookie_share () =
     h2_share := None;
     
     pr "Cleaning up share handle...";
-    Curl.share_cleanup share_handle;
+    Curl.Share.cleanup share_handle;
     pr "✓ Cookie sharing validation demo completed successfully"
     
   with
@@ -267,7 +267,7 @@ let demo_manual_cookie_share () =
       (* Clean up in reverse order *)
       (match !h1_share with Some h -> (try Curl.cleanup h with _ -> ()) | None -> ());
       (match !h2_share with Some h -> (try Curl.cleanup h with _ -> ()) | None -> ());
-      Curl.share_cleanup share_handle
+      Curl.Share.cleanup share_handle
   in
   ()
 (* Main function *)

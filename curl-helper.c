@@ -577,7 +577,7 @@ static char* strdup_ml(value v)
 {
   char* p = NULL;
   p = (char*)malloc(caml_string_length(v)+1);
-  memcpy(p,String_val(v),caml_string_length(v)+1); // caml strings have terminating zero
+  memcpy(p,String_val(v),caml_string_length(v)+1); /* caml strings have terminating zero */
   return p;
 }
 
@@ -4802,7 +4802,7 @@ value caml_curl_multi_cleanup(value handle)
   CAMLreturn(Val_unit);
 }
 
-static CURL* curlm_remove_finished(CURLM* multi_handle, CURLcode* result)
+static CURL* curlm_remove_finished(CURLM* multi_handle, CURLcode* result,bool remove )
 {
   int msgs_in_queue = 0;
 
@@ -4814,16 +4814,18 @@ static CURL* curlm_remove_finished(CURLM* multi_handle, CURLcode* result)
     {
       CURL* easy_handle = msg->easy_handle;
       if (result) *result = msg->data.result;
-      if (CURLM_OK != curl_multi_remove_handle(multi_handle, easy_handle))
-      {
-        /*caml_failwith("curlm_remove_finished");*/
+      if(remove){
+          if (CURLM_OK != curl_multi_remove_handle(multi_handle, easy_handle))
+          {
+            /*caml_failwith("curlm_remove_finished");*/
+          }
       }
       return easy_handle;
     }
   }
 }
 
-value caml_curlm_remove_finished(value v_multi)
+value caml_curlm_remove_finished(value v_multi, bool remove )
 {
   CAMLparam1(v_multi);
   CAMLlocal2(v_easy, v_tuple);
@@ -4835,7 +4837,7 @@ value caml_curlm_remove_finished(value v_multi)
   multi_handle = CURLM_val(v_multi);
 
   caml_release_runtime_system();
-  handle = curlm_remove_finished(multi_handle,&result);
+  handle = curlm_remove_finished(multi_handle,&result,remove);
   caml_acquire_runtime_system();
 
   if (NULL == handle)
@@ -4849,7 +4851,9 @@ value caml_curlm_remove_finished(value v_multi)
     {
         Store_field(Field(conn->ocamlValues, Ocaml_ERRORBUFFER), 0, caml_copy_string(conn->curl_ERRORBUFFER));
     }
-    conn->refcount--;
+    if(remove){
+        conn->refcount--;
+    }
     /* NB: same handle, but different block */
     v_easy = caml_curl_alloc(conn);
     v_tuple = caml_alloc_tuple(2);
@@ -5406,21 +5410,7 @@ value caml_curl_check_enums(value v_unit)
 * Curl share support
 */
 
-// Add proper CURLSHcode to message mapping
-static const char* curl_share_strerror_custom(CURLSHcode code)
-{
-    switch (code) {
-        case CURLSHE_OK: return "No error";
-        case CURLSHE_BAD_OPTION: return "Invalid option";
-        case CURLSHE_IN_USE: return "Share handle is still in use by easy handles";
-        case CURLSHE_INVALID: return "Invalid share handle";
-        case CURLSHE_NOMEM: return "Out of memory";
-        case CURLSHE_NOT_BUILT_IN: return "Feature not built into libcurl";
-        default: return "Unknown share error";
-    }
-}
-
-static void raise_share_error(char const* func, CURLSHcode code)
+static void raise_share_error( CURLSHcode code)
 {
     CAMLparam0();
     CAMLlocal1(exceptionData);
@@ -5429,18 +5419,14 @@ static void raise_share_error(char const* func, CURLSHcode code)
     if (NULL == exception)
     {
         exception = caml_named_value("Curl.Share.Error");
-        if (NULL == exception) {
-            // Fallback to a more generic but appropriate exception
-            exception = caml_named_value("Curl.CurlException");
-            if (NULL == exception) caml_invalid_argument("Curl.Share.Error not registered");
-        }
+        if (NULL == exception) caml_invalid_argument("Curl.Share.Error exception thrown but not registered");
     }
 
-    // Create structured exception data: (function_name, error_code, error_message)
+    /* Create structured exception data: (function_name, error_code, error_message) */
     exceptionData = caml_alloc_tuple(3);
-    Store_field(exceptionData, 0, caml_copy_string(func));
+    Store_field(exceptionData, 0, Val_int(code));
     Store_field(exceptionData, 1, Val_int(code));
-    Store_field(exceptionData, 2, caml_copy_string(curl_share_strerror_custom(code)));
+    Store_field(exceptionData, 2, caml_copy_string(curl_share_strerror(code)));
 
     caml_raise_with_arg(*exception, exceptionData);
     CAMLreturn0;
@@ -5450,30 +5436,28 @@ value caml_curl_share_strerror(value code)
 {
     CAMLparam1(code);
     CURLSHcode c = (CURLSHcode)Int_val(code);
-    CAMLreturn(caml_copy_string(curl_share_strerror_custom(c)));
+    CAMLreturn(caml_copy_string(curl_share_strerror(c)));
 }
 
-// Also improve the finalize function to handle cleanup more gracefully
 static void op_curl_share_finalize(value v)
 {
     ml_share_handle* h = Share_val(v);
     if (h && h->handle) {
-        // Don't throw exceptions during finalization
+        /* Don't throw exceptions during finalization */
         CURLSHcode rc = curl_share_cleanup(h->handle);
         if (rc != CURLSHE_OK) {
-            // Log error but don't throw exception during GC
             fprintf(stderr, "Warning: curl_share_cleanup failed during finalization with code %d: %s\n", 
-                    rc, curl_share_strerror_custom(rc));
+                    rc, curl_share_strerror(rc));
         }
         h->handle = NULL;
     }
     caml_stat_free(h);
 }
 
-static void check_share_code(char const* func, CURLSHcode code)
+static void check_share_code( CURLSHcode code)
 {
     if (code != CURLSHE_OK) {
-        raise_share_error(func, code);
+        raise_share_error( code);
     }
 }
 
@@ -5514,7 +5498,7 @@ value caml_curl_share_init(value unit)
     if (!h)
     {
         caml_stat_free(share);
-        raise_share_error("curl_share_init", CURLSHE_NOMEM);
+        raise_share_error( CURLSHE_NOMEM);
     }
 
     share->handle = h;
@@ -5540,7 +5524,7 @@ value caml_curl_share_cleanup(value handle)
         h->handle = NULL;
     }
 
-    check_share_code("curl_share_cleanup", rc);
+    check_share_code( rc);
 
     CAMLreturn(Val_unit);
 }
@@ -5553,7 +5537,7 @@ value caml_curl_share_setopt(value v_share, value option)
     CURLSHcode result = CURLSHE_OK;
 
     if (NULL == handle) {
-        raise_share_error("curl_share_setopt", CURLSHE_INVALID);
+        raise_share_error( CURLSHE_INVALID);
     }
 
     data = Field(option, 0);
@@ -5607,13 +5591,10 @@ value caml_curl_share_setopt(value v_share, value option)
             break;
     }
 
-    check_share_code("curl_share_setopt", result);
+    check_share_code( result);
 
     CAMLreturn(Val_unit);
 }
-
-
-
 
 #ifdef __cplusplus
 }
